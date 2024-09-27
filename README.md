@@ -1,6 +1,10 @@
 # Gyazo Uploader
 
-This is a simple script to upload images to private Gyazo server.
+This is a simple Go program that watches a folder for new images and uploads them to Gyazo. It is designed to work with Flameshot, a powerful yet simple-to-use screenshot software.
+
+A: Why use this program?
+
+Q: Ubuntu using WM Wayland does not support Gyazo's screenshot tool to take a screenshot.
 
 ## Installation
 
