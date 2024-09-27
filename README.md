@@ -20,10 +20,11 @@ Config Flameshot by running the following command:
 ```shell
 flameshot config
 ```
-!["Flameshot config"](img/2024-09-27_16-42.png)
+① Save Path to specific folder, e.g., /tmp/screenshots. Take a note of this path as you will need it later.
 
-Save Path to specific folder, e.g., /tmp/screenshots. Take a note of this path as you will need it later.
-Next config Flameshot to check "Save image after copy" to save the image to the specified folder.
+② Next config Flameshot to check "Save image after copy" to save the image to the specified folder.
+
+!["Flameshot config"](img/2024-09-27_16-42.png)
 
 ### 2. Set the shortcut to run Flameshot
 For Ubuntu, you can set the shortcut by going to Settings -> Keyboard Shortcuts -> Custom Shortcuts -> Add custom shortcut. Set the command `flameshot gui` to run Flameshot. 
