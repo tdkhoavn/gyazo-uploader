@@ -41,6 +41,7 @@ First, ensure you have Go installed on your system. Then, clone the repository a
 ```shell
 git clone https://github.com/tdkhoavn/gyazo-uploader.git
 cd gyazo-uploader
+go mod tidy
 go build -o gyazo-uploader main.go
 ```
 Second, edit your .gyazo.config.yml file to include your Gyazo API key and the path to the folder where Flameshot saves the images. For example:
