@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gen2brain/beeep"
+	"github.com/kardianos/service"
 	"gopkg.in/yaml.v3"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -16,10 +17,32 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
+
+var logger service.Logger
+
+type program struct{}
+
+func (p *program) Start(s service.Service) error {
+	go p.run()
+	return nil
+}
+func (p *program) run() {
+	homeDir := getHomeDir()
+	configPath := homeDir + "/" + ".gyazo.config.yml"
+
+	LoadConfig(configPath)
+
+	WatchDir()
+}
+func (p *program) Stop(s service.Service) error {
+	return nil
+}
 
 type GyazoConfig struct {
 	Host          string `yaml:"host"`
@@ -45,12 +68,103 @@ func LoadConfig(filePath string) {
 }
 
 func main() {
-	homeDir := os.Getenv("HOME")
-	configPath := homeDir + "/" + ".gyazo.config.yml"
+	svConfig := &service.Config{
+		Name:        "GyazoUploader",
+		DisplayName: "Gyazo Uploader",
+		Description: "Upload image to Gyazo",
+	}
 
-	LoadConfig(configPath)
+	prg := &program{}
+	s, err := service.New(prg, svConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+	logger, err = s.Logger(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	WatchDir()
+	if len(os.Args) > 1 {
+		cmd := os.Args[1]
+		switch cmd {
+		case "install":
+			err := s.Install()
+			if err != nil {
+				err := logger.Errorf("Install failure: %v", err)
+				if err != nil {
+					return
+				}
+			} else {
+				err := logger.Info("Install successful.")
+				if err != nil {
+					return
+				}
+			}
+		case "uninstall":
+			err := s.Uninstall()
+			if err != nil {
+				err := logger.Errorf("Uninstall failure: %v", err)
+				if err != nil {
+					return
+				}
+			} else {
+				err := logger.Info("Uninstall successful.")
+				if err != nil {
+					return
+				}
+			}
+		case "start":
+			err := s.Start()
+			if err != nil {
+				err := logger.Errorf("Start failure: %v", err)
+				if err != nil {
+					return
+				}
+			} else {
+				err := logger.Info("Start successful.")
+				if err != nil {
+					return
+				}
+			}
+		case "stop":
+			err := s.Stop()
+			if err != nil {
+				err := logger.Errorf("Stop failure: %v", err)
+				if err != nil {
+					return
+				}
+			} else {
+				err := logger.Info("Stop successful.")
+				if err != nil {
+					return
+				}
+			}
+		case "restart":
+			err := s.Restart()
+			if err != nil {
+				err := logger.Errorf("Restart failure: %v", err)
+				if err != nil {
+					return
+				}
+			} else {
+				err := logger.Info("Restart successful.")
+				if err != nil {
+					return
+				}
+			}
+		default:
+			fmt.Println("Command not found. Please use install, uninstall, start, stop, restart")
+		}
+		return
+	}
+	
+	err = s.Run()
+	if err != nil {
+		err := logger.Error(err)
+		if err != nil {
+			return
+		}
+	}
 }
 
 func ShowAlertError(title, text string) {
@@ -78,7 +192,7 @@ func IsImage(data []byte) bool {
 }
 
 func UploadFile(imageData []byte) error {
-	homeDir := os.Getenv("HOME")
+	homeDir := getHomeDir()
 	activeWindowName := "Gyazo"
 	xuri := Config.Host
 	boundary := "----BOUNDARYBOUNDARY----"
@@ -151,7 +265,7 @@ func UploadFile(imageData []byte) error {
 
 	url := string(body)
 
-	err = exec.Command("xdg-open", url).Start()
+	err = openURL(url)
 	if err != nil {
 		return fmt.Errorf("failed to open URL: %v", err)
 	}
@@ -245,4 +359,30 @@ func WatchDir() {
 		log.Fatal(err)
 	}
 	<-done
+}
+
+func getHomeDir() string {
+	usr, err := user.Current()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return ""
+	}
+	return usr.HomeDir
+}
+
+func openURL(url string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "linux":
+		cmd = exec.Command("xdg-open", url)
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+
+	return cmd.Start()
 }
